@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,13 +13,13 @@ import (
 )
 
 var (
-	host string
-	port string
+	host        string
+	port        string
 	verifyToken string
 	accessToken string
 )
 
-func init()  {
+func init() {
 	flag.StringVar(&host, "host", "", "hostname to listen on")
 	flag.StringVar(&port, "port", "5000", "port to listen on")
 
@@ -25,11 +27,11 @@ func init()  {
 	var ok bool
 	verifyToken, ok = os.LookupEnv("verify_token")
 	if !ok {
-		log.Fatalln("Error reading verify_token")
+		log.Fatalln("verifyToken is empty")
 	}
 	accessToken, ok = os.LookupEnv("access_token")
 	if !ok {
-		log.Fatalln("Error reading access_token")
+		log.Fatalln("accessToken is empty")
 	}
 
 }
@@ -51,13 +53,13 @@ func HandleMain(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleWebhook handles "/webhook" route.
-func HandleWebhook(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
+func HandleWebhook(w http.ResponseWriter, req *http.Request) {
+	if req.Method == "GET" {
 		log.Printf("GET /webhook")
 
-		mode := r.URL.Query().Get("hub.mode")
-		token := r.URL.Query().Get("hub.verify_token")
-		challenge := r.URL.Query().Get("hub.challenge")
+		mode := req.URL.Query().Get("hub.mode")
+		token := req.URL.Query().Get("hub.verify_token")
+		challenge := req.URL.Query().Get("hub.challenge")
 
 		fmt.Printf("mode: %s, token: %s, challenge: %s\n", mode, token, challenge)
 		if mode != "" && token != "" {
@@ -74,9 +76,25 @@ func HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if r.Method == "POST" {
-		log.Printf("POST /webhook")
-		
+	if req.Method == "POST" {
+		log.Println("POST /webhook")
+
+		bytes, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			log.Println("Error reading request body", err)
+		}
+
+		var body WholeBody
+		if err = json.Unmarshal(bytes, &body); err != nil {
+			fmt.Println("Error parsing json", err)
+		}
+
 		w.WriteHeader(http.StatusNotImplemented)
 	}
+}
+
+// WholeBody represents the body of a new messenger message (?)
+type WholeBody struct {
+	object string
+	entry  []interface{}
 }
