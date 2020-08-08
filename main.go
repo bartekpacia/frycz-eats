@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/bartekpacia/frycz-eats/webhooks"
 	"github.com/joho/godotenv"
 )
 
@@ -57,24 +57,7 @@ func HandleMain(w http.ResponseWriter, r *http.Request) {
 func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 	if req.Method == "GET" {
 		log.Printf("GET /webhook")
-
-		mode := req.URL.Query().Get("hub.mode")
-		token := req.URL.Query().Get("hub.verify_token")
-		challenge := req.URL.Query().Get("hub.challenge")
-
-		fmt.Printf("mode: %s, token: %s, challenge: %s\n", mode, token, challenge)
-		if mode != "" && token != "" {
-			if mode == "subscribe" && token == verifyToken {
-				log.Println("Webhook verified successfully. 200")
-				fmt.Fprintf(w, challenge)
-			} else {
-				log.Println("Webhook verification failed. 403")
-				w.WriteHeader(http.StatusForbidden)
-			}
-		} else {
-			log.Println("Webhook verification failed. 400")
-			w.WriteHeader(http.StatusBadRequest)
-		}
+		webhooks.VerifyWebhook(w, req, verifyToken)
 	}
 
 	if req.Method == "POST" {
@@ -85,18 +68,14 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 			log.Println("Error reading request body", err)
 		}
 
-		var body WholeBody
-		if err = json.Unmarshal(bodyBytes, &body); err != nil {
-			fmt.Println("Error parsing json", err)
-		}
-		fmt.Printf("text: %s\n", body.Entries[0].Messaging[0].Message.Text)
-
-		dst := bytes.Buffer{}
-		if err := json.Indent(&dst, bodyBytes, "", "  "); err != nil {
-			panic(err)
+		webhookEvents, err := webhooks.UnmarshallWebhookEvents(bodyBytes)
+		if err != nil {
+			log.Fatalf("Error unmarshalling webhookEvents: %e\n", err)
 		}
 
-		s, _ := json.MarshalIndent(body, "", "    ")
+		fmt.Printf("Message text: %s\n", webhookEvents[0].WebhookData[0].Message.Text)
+
+		s, _ := json.MarshalIndent(webhookEvents, "", "    ")
 		fmt.Printf("body: %s", string(s))
 
 		w.WriteHeader(http.StatusOK)
