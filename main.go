@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -79,22 +80,52 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 	if req.Method == "POST" {
 		log.Println("POST /webhook")
 
-		bytes, err := ioutil.ReadAll(req.Body)
+		bodyBytes, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			log.Println("Error reading request body", err)
 		}
 
 		var body WholeBody
-		if err = json.Unmarshal(bytes, &body); err != nil {
+		if err = json.Unmarshal(bodyBytes, &body); err != nil {
 			fmt.Println("Error parsing json", err)
 		}
+		fmt.Printf("text: %s\n", body.Entries[0].Messaging[0].Message.Text)
 
-		w.WriteHeader(http.StatusNotImplemented)
+		dst := bytes.Buffer{}
+		if err := json.Indent(&dst, bodyBytes, "", "  "); err != nil {
+			panic(err)
+		}
+
+		fmt.Println(dst.String())
+
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
 // WholeBody represents the body of a new messenger message (?)
 type WholeBody struct {
-	object string
-	entry  []interface{}
+	Object  string         `json:"object"`
+	Entries []WebhookEvent `json:"entry"`
+}
+
+type WebhookEvent struct {
+	ID        string        `json:"id"`
+	Time      int64         `json:"time"`
+	Messaging []WebhookData `json:"messaging"`
+}
+
+type WebhookData struct {
+	Sender    Person  `json:"sender"`
+	Recipient Person  `json:"recipient"`
+	Timestamp int64   `json:"timestamp"`
+	Message   Message `json:"message"`
+}
+
+type Person struct {
+	ID string `json:"id"`
+}
+
+type Message struct {
+	Mid  string `json:"mid"`
+	Text string `json:"text"`
 }
