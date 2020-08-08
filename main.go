@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/bartekpacia/frycz-eats/database"
 	"github.com/bartekpacia/frycz-eats/webhooks"
 	"github.com/joho/godotenv"
 )
@@ -75,15 +76,18 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 
 		for _, event := range entries {
 			webhookData := event.WebhookData[0]
-			
+
 			if webhookData.Message != nil {
-				responseText, err :=webhookData.HandleMessage(accessToken)
+				responseText, err := webhookData.HandleMessage(accessToken)
 				if err != nil {
 					log.Fatalf("Error handling message: %e\n", err)
 				}
+				fmt.Println("Sending response:", responseText)
 
-				fmt.Println("Response text:", responseText)
-				// Write to Firestore
+				err = database.SaveToDatabase(webhookData, webhookData.Message.Text)
+				if err != nil {
+					log.Fatalf("Error writing to firestore: %e\n", err)
+				}
 
 			} else if webhookData.Postback != nil {
 				webhookData.HandlePostback()
