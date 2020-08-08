@@ -96,7 +96,8 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 			panic(err)
 		}
 
-		fmt.Println(dst.String())
+		s, _ := json.MarshalIndent(body, "", "    ")
+		fmt.Printf("body: %s", string(s))
 
 		w.WriteHeader(http.StatusOK)
 	}
@@ -104,28 +105,41 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 
 // WholeBody represents the body of a new messenger message (?)
 type WholeBody struct {
-	Object  string         `json:"object"`
+	Object  string
 	Entries []WebhookEvent `json:"entry"`
 }
 
 type WebhookEvent struct {
-	ID        string        `json:"id"`
-	Time      int64         `json:"time"`
-	Messaging []WebhookData `json:"messaging"`
+	ID        string
+	Time      int64
+	Messaging []WebhookData
 }
 
 type WebhookData struct {
-	Sender    Person  `json:"sender"`
-	Recipient Person  `json:"recipient"`
-	Timestamp int64   `json:"timestamp"`
-	Message   Message `json:"message"`
+	Sender    Person
+	Recipient Person
+	Timestamp int64
+	Message   *Message
+	Postback  *Postback
 }
 
 type Person struct {
-	ID string `json:"id"`
+	ID string
 }
 
 type Message struct {
-	Mid  string `json:"mid"`
-	Text string `json:"text"`
+	Mid  string
+	Text string
+}
+
+type Postback struct {
+	Title    string
+	Payload  string
+	Referral Referral
+}
+
+type Referral struct {
+	Ref    string
+	Source string
+	Type   string
 }
