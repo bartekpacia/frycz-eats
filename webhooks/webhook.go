@@ -1,6 +1,9 @@
 package webhooks
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 /*
 Package api provides types for messenger-related stuff, such as webhooks.
@@ -10,10 +13,10 @@ Read more here: https://developers.facebook.com/docs/messenger-platform/referenc
 // WholeBody represents the body of a new messenger message (?)
 type wholeBody struct {
 	Object  string
-	WebhookEvents []*WebhookEvent `json:"entry"`
+	Entries []*Entries `json:"entry"`
 }
 
-type WebhookEvent struct {
+type Entries struct {
 	ID        string
 	Time      int64
 	WebhookData []WebhookData `json:"messaging"`
@@ -27,6 +30,14 @@ type WebhookData struct {
 	Postback  *Postback
 }
 
+func (wd WebhookData) HandleMessage() {
+	fmt.Printf("Handling message saying: %s\n", wd.Message.Text)
+}
+
+func (wd WebhookData) HandlePostback() {
+	fmt.Printf("Handling postback of title: %s\n", wd.Postback.Title)
+}
+
 // Person represents the actual person (usually sender or recipient)
 type Person struct {
 	ID string
@@ -36,6 +47,16 @@ type Person struct {
 type Message struct {
 	Mid  string
 	Text string
+	Attachments []*Attachment
+}
+
+type Attachment struct {
+	Type string
+	Payload *Payload
+}
+
+type Payload struct {
+	Url string
 }
 
 // Postback represents a postback, which is the action that occurs
@@ -53,12 +74,12 @@ type Referral struct {
 	Type   string
 }
 
-func UnmarshallWebhookEvents(data []byte) ([]*WebhookEvent, error) {
+func UnmarshallEntries(data []byte) ([]*Entries, error) {
 	var wholeBody wholeBody
 	err := json.Unmarshal(data, &wholeBody)
 	if err != nil {
 		return nil, err
 	}
 
-	return wholeBody.WebhookEvents, err
+	return wholeBody.Entries, err
 }

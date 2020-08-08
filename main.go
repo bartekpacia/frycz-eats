@@ -68,15 +68,24 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 			log.Println("Error reading request body", err)
 		}
 
-		webhookEvents, err := webhooks.UnmarshallWebhookEvents(bodyBytes)
+		entries, err := webhooks.UnmarshallEntries(bodyBytes)
 		if err != nil {
 			log.Fatalf("Error unmarshalling webhookEvents: %e\n", err)
 		}
 
-		fmt.Printf("Message text: %s\n", webhookEvents[0].WebhookData[0].Message.Text)
+		for _, event := range entries {
+			webhookData := event.WebhookData[0]
+			
+			if webhookData.Message != nil {
+				webhookData.HandleMessage()
+			} else if webhookData.Postback != nil {
+				webhookData.HandlePostback()
+			}
 
-		s, _ := json.MarshalIndent(webhookEvents, "", "    ")
-		fmt.Printf("body: %s", string(s))
+		}
+
+		s, _ := json.MarshalIndent(entries, "", "    ")
+		fmt.Printf("webhookEvents: %s", string(s))
 
 		w.WriteHeader(http.StatusOK)
 	}
