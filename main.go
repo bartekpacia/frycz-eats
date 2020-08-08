@@ -77,7 +77,14 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 			webhookData := event.WebhookData[0]
 			
 			if webhookData.Message != nil {
-				webhookData.HandleMessage()
+				responseText, err :=webhookData.HandleMessage(accessToken)
+				if err != nil {
+					log.Fatalf("Error handling message: %e\n", err)
+				}
+
+				fmt.Println("Response text:", responseText)
+				// Write to Firestore
+
 			} else if webhookData.Postback != nil {
 				webhookData.HandlePostback()
 			}

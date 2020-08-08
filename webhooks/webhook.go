@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -30,8 +31,21 @@ type WebhookData struct {
 	Postback  *Postback
 }
 
-func (wd WebhookData) HandleMessage() {
+func (wd WebhookData) HandleMessage(accessToken string) (responseText string, err error) {
 	fmt.Printf("Handling message saying: %s\n", wd.Message.Text)
+
+	if wd.Message.Attachments != nil {
+		responseText = "Po co wysyłasz nam zdjęcia? Przestań plz."
+		err = errors.New("unneeded photo")
+		return "", err
+	}
+
+	if wd.Message.Text == "" {
+		err = errors.New("message text is empty")
+		return "", err
+	}
+
+	return "Twoje zamówienie zostało zapisane!", nil
 }
 
 func (wd WebhookData) HandlePostback() {
