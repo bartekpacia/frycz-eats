@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -84,14 +83,14 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 					log.Fatalf("Error handling message: %e\n", err)
 				}
 
-				err = messenger.SendMessage(webhookData.Recipient.ID, responseText, accessToken)
+				err = messenger.SendMessage(webhookData.Sender.ID, responseText, accessToken)
 				if err != nil {
-					log.Printf("Error sending message: %e\n", err)
+					fmt.Printf("Error sending message: %e\n", err)
 				}
 
 				err = database.SaveOrder(webhookData, webhookData.Message.Text)
 				if err != nil {
-					log.Printf("Error saving order to firestore: %e\n", err)
+					fmt.Printf("Error saving order to firestore: %e\n", err)
 				}
 
 			} else if webhookData.Postback != nil {
@@ -100,8 +99,8 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 
 		}
 
-		s, _ := json.MarshalIndent(entries, "", "    ")
-		fmt.Printf("webhookEvents: %s\n", string(s))
+		//s, _ := json.MarshalIndent(entries, "", "    ")
+		//fmt.Printf("webhookEvents: %s\n", string(s))
 
 		w.WriteHeader(http.StatusOK)
 	}

@@ -3,7 +3,6 @@ package messenger
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -15,12 +14,12 @@ import (
 const facebookURL string = "https://graph.facebook.com/v2.6/me/messages"
 
 type RequestBody struct {
-	Recipient *webhooks.Person
-	Message   *Message          
+	Recipient *webhooks.Person `json:"recipient"`
+	Message   *Message         `json:"message"`
 }
 
 type Message struct {
-	Text string 
+	Text string `json:"text"`
 }
 
 // User represents a Messenger user obtained through the Facebook's Graph API
@@ -40,7 +39,6 @@ func SendMessage(recipientPsid string, text string, accessToken string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("body: %v\n", body)
 	fmt.Printf("bodyJSON: %s\n", string(bodyJSON))
 
 	fullURL, err := url.Parse(facebookURL)
@@ -59,8 +57,8 @@ func SendMessage(recipientPsid string, text string, accessToken string) error {
 	}
 
 	if response.StatusCode != 200 {
-		errorText := fmt.Sprintf("failed to send a message. status=%d\n", response.StatusCode)
-		err = errors.New(errorText)
+		fmt.Printf("failed to send a message. status=%d", response.StatusCode)
+		fmt.Print(response)
 	}
 
 	return err

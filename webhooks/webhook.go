@@ -53,7 +53,7 @@ func (wd WebhookData) HandlePostback() {
 
 // Person represents the actual person (usually sender or recipient)
 type Person struct {
-	ID string
+	ID string `json:"id"`
 }
 
 // Message represents a textual message
