@@ -84,10 +84,12 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 				}
 				fmt.Println("Sending response:", responseText)
 
-				err = database.SaveToDatabase(webhookData, webhookData.Message.Text)
+				err = database.SaveOrder(webhookData, webhookData.Message.Text)
 				if err != nil {
 					log.Fatalf("Error writing to firestore: %e\n", err)
 				}
+
+				database.GetRecentOrders(3)
 
 			} else if webhookData.Postback != nil {
 				webhookData.HandlePostback()
