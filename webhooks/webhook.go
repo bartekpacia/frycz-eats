@@ -18,8 +18,8 @@ type wholeBody struct {
 }
 
 type Entries struct {
-	ID        string
-	Time      int64
+	ID          string
+	Time        int64
 	WebhookData []WebhookData `json:"messaging"`
 }
 
@@ -36,8 +36,7 @@ func (wd WebhookData) HandleMessage(accessToken string) (responseText string, er
 
 	if wd.Message.Attachments != nil {
 		responseText = "Po co wysyłasz nam zdjęcia? Przestań plz."
-		err = errors.New("unneeded photo")
-		return "", err
+		return responseText, nil
 	}
 
 	if wd.Message.Text == "" {
@@ -59,13 +58,13 @@ type Person struct {
 
 // Message represents a textual message
 type Message struct {
-	Mid  string
-	Text string
+	Mid         string
+	Text        string
 	Attachments []*Attachment
 }
 
 type Attachment struct {
-	Type string
+	Type    string
 	Payload *Payload
 }
 

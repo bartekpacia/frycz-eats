@@ -17,10 +17,10 @@ var client *firestore.Client
 
 // OrderData represents order that can be placed by a person.
 type OrderData struct {
-	Psid      string `json:"orderer_psid"`
-	Order     string `json:"order"`
+	Psid      string      `json:"orderer_psid"`
+	Order     string      `json:"order"`
 	OrderedAt interface{} `json:"ordered_at"`
-	Completed bool `json:"completed"`
+	Completed bool        `json:"completed"`
 }
 
 func init() {
@@ -47,7 +47,7 @@ func SaveOrder(wd webhooks.WebhookData, order string) (err error) {
 
 	_, _, err = client.Collection("orders").Add(context.Background(), map[string]interface{}{
 		"orderer_psid": orderData.Psid,
-		"order":      orderData.Order,
+		"order":        orderData.Order,
 		"ordered_at":   firestore.ServerTimestamp,
 		"completed":    orderData.Completed})
 
@@ -55,31 +55,31 @@ func SaveOrder(wd webhooks.WebhookData, order string) (err error) {
 }
 
 // GetRecentOrders returns "orderCount" recent orders.
-func GetRecentOrders(orderCount int) (orders []OrderData, err error){
+func GetRecentOrders(orderCount int) (orders []OrderData, err error) {
 	iter := client.Collection("orders").OrderBy(
 		"ordered_at", firestore.Desc).Limit(orderCount).Documents(context.Background())
 
-		for {
-			doc, err := iter.Next()
-			if err == iterator.Done {
-				break
-			}
-			if err != nil {
-				return nil, err
-			}
-			bajty, err := json.Marshal(doc.Data())
-			if err != nil {
-				return nil, err
-			}
-
-			var order OrderData
-			err = json.Unmarshal(bajty, &order)
-			if err != nil {
-				return nil, err
-			}
-
-			fmt.Printf("order: %v\n", order)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
 		}
+		if err != nil {
+			return nil, err
+		}
+		bajty, err := json.Marshal(doc.Data())
+		if err != nil {
+			return nil, err
+		}
+
+		var order OrderData
+		err = json.Unmarshal(bajty, &order)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("order: %v\n", order)
+	}
 
 	return nil, nil
 }

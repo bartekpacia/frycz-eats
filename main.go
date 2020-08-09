@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/bartekpacia/frycz-eats/database"
+	"github.com/bartekpacia/frycz-eats/messenger"
 	"github.com/bartekpacia/frycz-eats/webhooks"
 	"github.com/joho/godotenv"
 )
@@ -82,14 +83,16 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 				if err != nil {
 					log.Fatalf("Error handling message: %e\n", err)
 				}
-				fmt.Println("Sending response:", responseText)
+
+				err = messenger.SendMessage(webhookData.Recipient.ID, responseText, accessToken)
+				if err != nil {
+					log.Printf("Error sending message: %e\n", err)
+				}
 
 				err = database.SaveOrder(webhookData, webhookData.Message.Text)
 				if err != nil {
-					log.Fatalf("Error writing to firestore: %e\n", err)
+					log.Printf("Error saving order to firestore: %e\n", err)
 				}
-
-				database.GetRecentOrders(3)
 
 			} else if webhookData.Postback != nil {
 				webhookData.HandlePostback()
@@ -98,7 +101,7 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 		}
 
 		s, _ := json.MarshalIndent(entries, "", "    ")
-		fmt.Printf("webhookEvents: %s", string(s))
+		fmt.Printf("webhookEvents: %s\n", string(s))
 
 		w.WriteHeader(http.StatusOK)
 	}
