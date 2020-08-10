@@ -5,6 +5,7 @@ go 1.14
 require (
 	cloud.google.com/go/firestore v1.3.0
 	firebase.google.com/go v3.13.0+incompatible
+	github.com/bartekpacia/facebook-messenger v0.0.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6 // indirect
