@@ -13,25 +13,19 @@ Package webhooks provides types and functions for webhooks.
 Read more here: https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/
 */
 
-// WholeBody represents the body of a new messenger message (?)
+// WholeBody represents the body of a request that is sent to the webhook when it is hit
 type wholeBody struct {
-	Object  string
+	Object  string     `json:"object"`
 	Entries []*Entries `json:"entry"`
 }
 
-type Entries struct {
-	ID          string
-	Time        int64
-	WebhookData []WebhookData `json:"messaging"`
-}
+// WebhookData represents data that is sent to the webhook when it is hit
+type WebhookData messenger.RequestBody
 
-// WebhookData is data that is sent to us when a Messenger /POST webhoook is activated
-type WebhookData struct {
-	Sender    *messenger.Person
-	Recipient *messenger.Person
-	Timestamp int64
-	Message   *messenger.Message
-	Postback  *messenger.Postback
+type Entries struct {
+	ID          string        `json:"id"`
+	Time        int64         `json:"time"`
+	WebhookData []WebhookData `json:"messaging"`
 }
 
 func (wd WebhookData) HandleMessage(accessToken string) (responseText string, err error) {
@@ -50,8 +44,16 @@ func (wd WebhookData) HandleMessage(accessToken string) (responseText string, er
 	return "Twoje zamówienie zostało zapisane!", nil
 }
 
-func (wd WebhookData) HandlePostback() {
+func (wd WebhookData) HandlePostback() (message string, err error) {
 	fmt.Println("New postback:", wd.Postback.Title)
+
+	if wd.Postback.Payload == "yes" {
+		return "You selected yes", nil
+	} else if wd.Postback.Payload == "no" {
+		return "You selected no", nil
+	} else {
+		return "", errors.New("user selected invalid response")
+	}
 }
 
 // UnmarshallEntries parses response body and returns the list of entries

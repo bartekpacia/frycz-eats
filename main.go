@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/bartekpacia/frycz-eats/database"
 	"github.com/bartekpacia/frycz-eats/messenger"
 	"github.com/bartekpacia/frycz-eats/webhooks"
 	"github.com/joho/godotenv"
@@ -78,29 +78,45 @@ func HandleWebhook(w http.ResponseWriter, req *http.Request) {
 			webhookData := event.WebhookData[0]
 
 			if webhookData.Message != nil {
-				responseText, err := webhookData.HandleMessage(accessToken)
+				// responseText, err := webhookData.HandleMessage(accessToken)
+				// if err != nil {
+				// 	fmt.Println("Error handling message:", err)
+				// }
+
+				// user, err := messenger.GetUser(webhookData.Sender.ID, accessToken)
+				// if err != nil {
+				// 	fmt.Println("Error getting user:", err)
+				// }
+				
+				// msgText := fmt.Sprintf("Cześć, %s %s! %s \n", user.FirstName, user.LastName, responseText)
+
+				// err = messenger.SendMessage(webhookData.Sender.ID, msgText, accessToken)
+				err = messenger.SendPostback(webhookData.Sender.ID, accessToken)
 				if err != nil {
-					log.Fatalf("Error handling message: %e\n", err)
+					fmt.Println("Error sending message:", err)
 				}
 
-				err = messenger.SendMessage(webhookData.Sender.ID, responseText, accessToken)
-				if err != nil {
-					fmt.Printf("Error sending message: %e\n", err)
-				}
-
-				err = database.SaveOrder(webhookData, webhookData.Message.Text)
-				if err != nil {
-					fmt.Printf("Error saving order to firestore: %e\n", err)
-				}
+				// err = database.SaveOrder(webhookData, webhookData.Message.Text)
+				// if err != nil {
+				// 	fmt.Println("Error saving order to firestore:", err)
+				// }
 
 			} else if webhookData.Postback != nil {
-				webhookData.HandlePostback()
+				msgText, err := webhookData.HandlePostback()
+				if err != nil {
+					fmt.Println("Error handling postback")
+				}
+
+				err = messenger.SendMessage(webhookData.Sender.ID, msgText, accessToken)
+				if err != nil {
+					fmt.Println("Error sending message:", err)
+				}
 			}
 
 		}
 
-		//s, _ := json.MarshalIndent(entries, "", "    ")
-		//fmt.Printf("webhookEvents: %s\n", string(s))
+		s, _ := json.MarshalIndent(entries, "", "    ")
+		fmt.Printf("webhookEvents: %s\n", string(s))
 
 		w.WriteHeader(http.StatusOK)
 	}

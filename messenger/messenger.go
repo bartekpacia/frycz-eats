@@ -12,33 +12,53 @@ import (
 
 const facebookURL string = "https://graph.facebook.com/v2.6/me/messages"
 
-type requestBody struct {
-	Recipient *Person `json:"recipient"`
-	Message   *Message         `json:"message"`
+type RequestBody struct {
+	Sender    *Person   `json:"sender,omitempty"`
+	Recipient *Person   `json:"recipient,omitempty"`
+	Timestamp *int64    `json:"timestamp,omitempty"`
+	Message   *Message  `json:"message,omitempty"`
+	Postback  *Postback `json:"postback,omitempty"`
 }
 
 // Message represents a textual message
+// https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/messages
 type Message struct {
-	Text        string  `json:"text"`
-	Attachments []*Attachment  `json:"attachments,omitempty"`
-	Mid         string `json:"mid,omitempty"`
+	Text        string        `json:"text"`
+	Attachments []*Attachment `json:"attachments,omitempty"`
+	Attachment  *Attachment   `json:"attachment,omitempty"`
+	Mid         string        `json:"mid,omitempty"`
 }
 
 type Attachment struct {
-	Type    string `json:"type"`
+	Type    string   `json:"type"`
 	Payload *Payload `json:"payload,omitempty"`
 }
 
 type Payload struct {
-	URL string `json:"url,omitempty"`
+	URL          string     `json:"url,omitempty"`
+	TemplateType string     `json:"template_type,omitempty"`
+	Elements     []*Element `json:"elements,omitempty"`
+}
+
+type Element struct {
+	Title    string    `json:"title,omitempty"`
+	Subtitle string    `json:"subtitle,omitempty"`
+	ImageURL string    `json:"image_url,omitempty"`
+	Buttons  []*Button `json:"buttons,omitempty"`
+}
+
+type Button struct {
+	Type    string `json:"type,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Payload string `json:"payload,omitempty"`
 }
 
 // Postback represents a postback, which is the action that occurs
 // when some button in Messenger is tapped.
 // https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/messaging_postbacks
 type Postback struct {
-	Title    string `json:"title"`
-	Payload  string `json:"payload"`
+	Title    string    `json:"title"`
+	Payload  string    `json:"payload"`
 	Referral *Referral `json:"referral"`
 }
 
@@ -57,16 +77,35 @@ type Person struct {
 type User struct {
 	FirstName  string `json:"first_name"`
 	LastName   string `json:"last_name"`
-	ProfilePic string `json:"profile_pic"`
+	ProfilePicURL string `json:"profile_pic"`
 }
 
-
-// SendMessage sends a text message on Messenger to recipientPsid
-func SendMessage(recipientPsid string, text string, accessToken string) error {
-	recipient := Person{ID: recipientPsid}
+// SendMessage sends a text message on Messenger to recipientPSID
+func SendMessage(recipientPSID string, text string, accessToken string) error {
+	recipient := Person{ID: recipientPSID}
 	message := Message{Text: text}
-	body := requestBody{&recipient, &message}
+	body := RequestBody{Recipient: &recipient, Message: &message}
 
+	err := send(body, accessToken)
+	return err
+}
+
+// SendPostback sends a postback message on Messenger to recipientPSID
+func SendPostback(recipientPSID string, accessToken string) error {
+	buttonYes := Button{Type: "postback", Title: "Yes!", Payload: "yes"}
+	buttonNo := Button{Type: "postback", Title: "No!", Payload: "no"}
+	element := Element{Title: "Title", Subtitle: "Subtitle", Buttons: []*Button{&buttonYes, &buttonNo}}
+	payload := Payload{TemplateType: "generic", Elements: []*Element{&element}}
+	attachment := Attachment{Type: "template", Payload: &payload}
+	message := Message{ Attachment: &attachment}
+
+	body := RequestBody{Recipient: &Person{ID: recipientPSID}, Message: &message}
+
+	err := send(body, accessToken)
+	return err
+}
+
+func send(body RequestBody, accessToken string) error {
 	bodyJSON, err := json.MarshalIndent(body, "", "    ")
 	if err != nil {
 		return err
@@ -87,7 +126,7 @@ func SendMessage(recipientPsid string, text string, accessToken string) error {
 	}
 
 	if response.StatusCode != 200 {
-		errMsg := fmt.Sprintln("failed to send a message. Response:", response)
+		errMsg := fmt.Sprintln("failed to send. Response:", response)
 		return errors.New(errMsg)
 	}
 
@@ -106,7 +145,6 @@ func GetUser(PSID string, accessToken string) (*User, error) {
 	qs.Set("access_token", accessToken)
 	qs.Set("fields", "first_name,last_name,profile_pic")
 	fullURL.RawQuery = qs.Encode()
-	fmt.Printf("fullURL: %s\n", fullURL.String())
 
 	res, err := http.Get(fullURL.String())
 	if err != nil {
@@ -123,8 +161,6 @@ func GetUser(PSID string, accessToken string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Print("User.FirstName:", user.FirstName)
 
 	return &user, nil
 }
