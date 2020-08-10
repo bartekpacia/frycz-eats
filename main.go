@@ -51,7 +51,7 @@ func main() {
 
 // HandleMain handles "/" route.
 func HandleMain(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Frycz Eats API homepage. Hi!")
+	fmt.Fprintln(w, "Frycz Eats API homepage. Hi!")
 }
 
 // HandleWebhook handles "/webhook" route.
