@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/bartekpacia/frycz-eats/messenger"
 )
 
 /*
-Package api provides types for messenger-related stuff, such as webhooks.
+Package webhooks provides types and functions for webhooks.
 Read more here: https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/
 */
 
@@ -23,16 +25,17 @@ type Entries struct {
 	WebhookData []WebhookData `json:"messaging"`
 }
 
+// WebhookData is data that is sent to us when a Messenger /POST webhoook is activated
 type WebhookData struct {
-	Sender    Person
-	Recipient Person
+	Sender    *messenger.Person
+	Recipient *messenger.Person
 	Timestamp int64
-	Message   *Message
-	Postback  *Postback
+	Message   *messenger.Message
+	Postback  *messenger.Postback
 }
 
 func (wd WebhookData) HandleMessage(accessToken string) (responseText string, err error) {
-	fmt.Printf("Handling message saying: %s\n", wd.Message.Text)
+	fmt.Println("New message:", wd.Message.Text)
 
 	if wd.Message.Attachments != nil {
 		responseText = "Po co wysyłasz nam zdjęcia? Przestań plz."
@@ -48,45 +51,10 @@ func (wd WebhookData) HandleMessage(accessToken string) (responseText string, er
 }
 
 func (wd WebhookData) HandlePostback() {
-	fmt.Printf("Handling postback of title: %s\n", wd.Postback.Title)
+	fmt.Println("New postback:", wd.Postback.Title)
 }
 
-// Person represents the actual person (usually sender or recipient)
-type Person struct {
-	ID string `json:"id"`
-}
-
-// Message represents a textual message
-type Message struct {
-	Mid         string
-	Text        string
-	Attachments []*Attachment
-}
-
-type Attachment struct {
-	Type    string
-	Payload *Payload
-}
-
-type Payload struct {
-	Url string
-}
-
-// Postback represents a postback, which is the action that occurs
-// when some button in Messenger is tapped.
-// https://developers.facebook.com/docs/messenger-platform/reference/webhook-events/messaging_postbacks
-type Postback struct {
-	Title    string
-	Payload  string
-	Referral *Referral
-}
-
-type Referral struct {
-	Ref    string
-	Source string
-	Type   string
-}
-
+// UnmarshallEntries parses response body and returns the list of entries
 func UnmarshallEntries(data []byte) ([]*Entries, error) {
 	var wholeBody wholeBody
 	err := json.Unmarshal(data, &wholeBody)
